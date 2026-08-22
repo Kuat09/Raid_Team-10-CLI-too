@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 )
 
 type Task struct {
@@ -11,5 +14,18 @@ type Task struct {
 }
 
 func main() {
-	
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Println()
+		fmt.Println("=== МЕНЮ ЗАДАЧ ===")
+		fmt.Println("1. Создать таску")
+		fmt.Println("2. Пометить выполненным")
+		fmt.Println("3. Удалить таску")
+		fmt.Println("4. Все таски")
+		fmt.Println("5. Завершить работу программы")
+		fmt.Print("Выберите действие (1-5): ")
+		input, _ := reader.ReadString('\n')
+		choice := strings.TrimSpace(input)
+		fmt.Println()
+	}
 }
