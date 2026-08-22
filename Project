@@ -1,0 +1,15 @@
+package main
+
+import (
+	"fmt"
+)
+
+type Task struct {
+	id     int
+	title  string
+	status string
+}
+
+func main() {
+	
+}
