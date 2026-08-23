@@ -96,6 +96,28 @@ func MarkTaskAsDone(id string) error {
 	return nil
 }
 
+func DeleteTask(id string) error {
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+	for i, task := range tasks {
+		if task.ID == id {
+			tasks = append(tasks[:i], tasks[i+1:]...)
+			break
+		}
+	}
+
+	file, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fmt.Println("Таска успешно удалена.")
+	return nil
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
