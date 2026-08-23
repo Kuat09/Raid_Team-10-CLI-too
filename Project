@@ -118,6 +118,29 @@ func DeleteTask(id string) error {
 	return nil
 }
 
+func ListTasks() error {
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+
+	if len(tasks) == 0 {
+		fmt.Println("Список задач пуст.")
+		return nil
+	}
+
+	fmt.Println("+----+----------------------+-------------+")
+	fmt.Println("| ID | Title                | Status      |")
+	fmt.Println("+----+----------------------+-------------+")
+	for _, task := range tasks {
+		fmt.Printf("| %-2s |", task.ID)
+		fmt.Printf(" %-20s |", task.Title)
+		fmt.Printf(" %-11s |\n", task.Status)
+	}
+	fmt.Println("+----+----------------------+-------------+")
+	return nil
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
