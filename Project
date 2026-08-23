@@ -5,12 +5,47 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"strconv"
 )
 
+const file = "tasks.txt"
+
 type Task struct {
-	id     int
-	title  string
-	status string
+	ID     string
+	Title  string
+	Status string
+}
+
+func loadTasks() ([]Task, error) {
+	file, err := os.Open(file)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []Task{}, nil
+		}
+		return nil, err
+	}
+	defer file.Close()
+
+	var tasks []Task
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(line, "|")
+		if len(parts) != 3 {
+			continue
+		}
+		id := parts[0]
+		title := parts[1]
+		status := parts[2]
+		task := Task{ID: id, Title: title, Status: status}
+		tasks = append(tasks, task)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func main() {
