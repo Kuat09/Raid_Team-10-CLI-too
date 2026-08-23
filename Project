@@ -154,6 +154,63 @@ func main() {
 		fmt.Print("Выберите действие (1-5): ")
 		input, _ := reader.ReadString('\n')
 		choice := strings.TrimSpace(input)
+		switch choice {
+		case "1":
+			fmt.Print("Введите название таски: ")
+			titleInput, _ := reader.ReadString('\n')
+			title := strings.TrimSpace(titleInput)
+			if title == "" {
+				fmt.Println("Название не может быть пустым.")
+				continue
+			}else if len(title) > 20 {
+				fmt.Println("Название не может быть длиннее 20 символов.")
+				continue
+			}
+			err := CreateTask(title)
+			if err != nil {
+				fmt.Println("Ошибка при создании таски:", err)
+			}
+		case "2":
+			fmt.Print("Введите ID таски для пометки выполненной: ")
+			idInput, _ := reader.ReadString('\n')
+			id := strings.TrimSpace(idInput)
+			if id == "" {
+				fmt.Println("ID не может быть пустым.")
+				continue
+			}else if _, err := strconv.Atoi(id); err != nil {
+				fmt.Println("ID должен быть числом.")
+				continue
+			}
+			err := MarkTaskAsDone(id)
+			if err != nil {
+				fmt.Println("Ошибка при пометке таски как выполненной:", err)
+			}
+		case "3":
+			fmt.Print("Введите ID таски для удаления: ")
+			idInput, _ := reader.ReadString('\n')
+			id := strings.TrimSpace(idInput)
+			if id == "" {
+				fmt.Println("ID не может быть пустым.")
+				continue
+			}else if _, err := strconv.Atoi(id); err != nil {
+				fmt.Println("ID должен быть числом.")
+				continue
+			}
+			err := DeleteTask(id)
+			if err != nil {
+				fmt.Println("Ошибка при удалении таски:", err)
+			}
+		case "4":
+			err := ListTasks()
+			if err != nil {
+				fmt.Println("Ошибка при выводе тасок:", err)
+			}
+		case "5":
+			fmt.Println("Завершение работы программы.")
+			return
+		default:
+			fmt.Println("Неверный ввод. Введите число от 1 до 5.")
+		}
 		fmt.Println()
 	}
 }
