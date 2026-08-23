@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 const file = "tasks.txt"
@@ -27,10 +27,13 @@ func loadTasks() ([]Task, error) {
 	defer file.Close()
 
 	var tasks []Task
+	if len(tasks) > 99 {
+		fmt.Println("Превышено максимальное количество тасок (99).")
+	}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.Split(line, "|")
+		parts := strings.Split(line, ";")
 		if len(parts) != 3 {
 			continue
 		}
@@ -46,6 +49,26 @@ func loadTasks() ([]Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func saveTasks(tasks []Task) error {
+	file, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	for _, task := range tasks {
+		_, err := file.WriteString(
+			fmt.Sprintf("%s;%s;%s\n", task.ID, task.Title, task.Status),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func CreateTask(title string) error {
@@ -64,7 +87,7 @@ func CreateTask(title string) error {
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(fmt.Sprintf("%s|%s|%s\n", task.ID, task.Title, task.Status))
+	_, err = file.WriteString(fmt.Sprintf("%s;%s;%s\n", task.ID, task.Title, task.Status))
 	if err != nil {
 		return err
 	}
@@ -80,17 +103,20 @@ func MarkTaskAsDone(id string) error {
 	}
 
 	for i, task := range tasks {
+		if task.Status == "DONE" {
+			fmt.Println("Таска уже выполнена.")
+			return nil
+		}
 		if task.ID == id {
 			tasks[i].Status = "DONE"
 			break
 		}
 	}
 
-	file, err := os.Create(file)
+	err = saveTasks(tasks)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	fmt.Println("Таска успешно помечена как выполненная.")
 	return nil
@@ -101,6 +127,7 @@ func DeleteTask(id string) error {
 	if err != nil {
 		return err
 	}
+
 	for i, task := range tasks {
 		if task.ID == id {
 			tasks = append(tasks[:i], tasks[i+1:]...)
@@ -108,11 +135,10 @@ func DeleteTask(id string) error {
 		}
 	}
 
-	file, err := os.Create(file)
+	err = saveTasks(tasks)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	fmt.Println("Таска успешно удалена.")
 	return nil
@@ -162,7 +188,7 @@ func main() {
 			if title == "" {
 				fmt.Println("Название не может быть пустым.")
 				continue
-			}else if len(title) > 20 {
+			} else if len(title) > 20 {
 				fmt.Println("Название не может быть длиннее 20 символов.")
 				continue
 			}
@@ -177,7 +203,7 @@ func main() {
 			if id == "" {
 				fmt.Println("ID не может быть пустым.")
 				continue
-			}else if _, err := strconv.Atoi(id); err != nil {
+			} else if _, err := strconv.Atoi(id); err != nil {
 				fmt.Println("ID должен быть числом.")
 				continue
 			}
@@ -192,7 +218,7 @@ func main() {
 			if id == "" {
 				fmt.Println("ID не может быть пустым.")
 				continue
-			}else if _, err := strconv.Atoi(id); err != nil {
+			} else if _, err := strconv.Atoi(id); err != nil {
 				fmt.Println("ID должен быть числом.")
 				continue
 			}
