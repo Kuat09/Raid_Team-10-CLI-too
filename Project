@@ -48,6 +48,31 @@ func loadTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+func CreateTask(title string) error {
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+
+	id := strconv.Itoa(len(tasks) + 1)
+	task := Task{ID: id, Title: title, Status: "TODO"}
+	tasks = append(tasks, task)
+
+	file, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(fmt.Sprintf("%s|%s|%s\n", task.ID, task.Title, task.Status))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Таска успешно создана.")
+	return nil
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
