@@ -73,6 +73,29 @@ func CreateTask(title string) error {
 	return nil
 }
 
+func MarkTaskAsDone(id string) error {
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+
+	for i, task := range tasks {
+		if task.ID == id {
+			tasks[i].Status = "DONE"
+			break
+		}
+	}
+
+	file, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fmt.Println("Таска успешно помечена как выполненная.")
+	return nil
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
