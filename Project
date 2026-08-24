@@ -8,16 +8,16 @@ import (
 	"strings"
 )
 
-const file = "tasks.txt"
+const fileName = "tasks.txt"
 
 type Task struct {
 	ID     string
-	Title  string
 	Status string
+	Title  string
 }
 
 func loadTasks() ([]Task, error) {
-	file, err := os.Open(file)
+	file, err := os.Open(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []Task{}, nil
@@ -27,26 +27,20 @@ func loadTasks() ([]Task, error) {
 	defer file.Close()
 
 	var tasks []Task
-
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		parts := strings.Split(line, ";")
-
+		parts := strings.SplitN(line, ";", 3)
 		if len(parts) != 3 {
 			continue
 		}
 
-		id := parts[0]
-		title := parts[1]
-		status := parts[2]
-
 		task := Task{
-			ID:     id,
-			Title:  title,
-			Status: status,
+			ID:     parts[0],
+			Status: parts[1],
+			Title:  parts[2],
 		}
 
 		tasks = append(tasks, task)
@@ -60,15 +54,21 @@ func loadTasks() ([]Task, error) {
 }
 
 func saveTasks(tasks []Task) error {
-	file, err := os.Create(file)
+	file, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
+	writer := bufio.NewWriter(file)
+
 	for _, task := range tasks {
-		_, err := file.WriteString(
-			fmt.Sprintf("%s;%s;%s\n", task.ID, task.Title, task.Status),
+		_, err := fmt.Fprintf(
+			writer,
+			"%s;%s;%s\n",
+			task.ID,
+			task.Status,
+			task.Title,
 		)
 
 		if err != nil {
@@ -76,7 +76,7 @@ func saveTasks(tasks []Task) error {
 		}
 	}
 
-	return nil
+	return writer.Flush()
 }
 
 func CreateTask(title string) error {
@@ -85,36 +85,21 @@ func CreateTask(title string) error {
 		return err
 	}
 
-	// Максимум 99 задач.
 	if len(tasks) >= 99 {
-		return fmt.Errorf("превышено максимальное количество тасок (99)")
+		return fmt.Errorf("достигнуто максимальное количество задач: 99")
 	}
 
 	id := strconv.Itoa(len(tasks) + 1)
 
 	task := Task{
 		ID:     id,
-		Title:  title,
 		Status: "TODO",
+		Title:  title,
 	}
 
 	tasks = append(tasks, task)
 
-	file, err := os.OpenFile(
-		file,
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0644,
-	)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(
-		fmt.Sprintf("%s;%s;%s\n", task.ID, task.Title, task.Status),
-	)
-
-	if err != nil {
+	if err := saveTasks(tasks); err != nil {
 		return err
 	}
 
@@ -128,25 +113,30 @@ func MarkTaskAsDone(id string) error {
 		return err
 	}
 
-	for i, task := range tasks {
-		if task.ID == id {
-			if task.Status == "DONE" {
+	// Ищем задачу с указанным ID.
+	for i := range tasks {
+		if tasks[i].ID == id {
+
+			// Если задача уже выполнена.
+			if tasks[i].Status == "DONE" {
 				fmt.Println("Таска уже выполнена.")
 				return nil
 			}
 
+			// Меняем статус на DONE.
 			tasks[i].Status = "DONE"
-			break
+
+			if err := saveTasks(tasks); err != nil {
+				return err
+			}
+
+			fmt.Println("Таска успешно помечена как выполненная.")
+			return nil
 		}
 	}
 
-	err = saveTasks(tasks)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Таска успешно помечена как выполненная.")
-	return nil
+	// Если цикл закончился и задача не была найдена.
+	return fmt.Errorf("таска с ID %s не найдена", id)
 }
 
 func DeleteTask(id string) error {
@@ -155,15 +145,26 @@ func DeleteTask(id string) error {
 		return err
 	}
 
-	for i, task := range tasks {
-		if task.ID == id {
+	found := false
+
+	for i := range tasks {
+		if tasks[i].ID == id {
 			tasks = append(tasks[:i], tasks[i+1:]...)
+			found = true
 			break
 		}
 	}
 
-	err = saveTasks(tasks)
-	if err != nil {
+	if !found {
+		return fmt.Errorf("таска с ID %s не найдена", id)
+	}
+
+	// Перенумеровываем задачи после удаления.
+	for i := range tasks {
+		tasks[i].ID = strconv.Itoa(i + 1)
+	}
+
+	if err := saveTasks(tasks); err != nil {
 		return err
 	}
 
@@ -187,9 +188,11 @@ func ListTasks() error {
 	fmt.Println("+----+----------------------+-------------+")
 
 	for _, task := range tasks {
-		fmt.Printf("| %-2s |", task.ID)
-		fmt.Printf(" %-20s |", task.Title)
-		fmt.Printf(" %-11s |\n", task.Status)
+		fmt.Printf("| %2s | %-20s | %-11s |\n",
+			task.ID,
+			task.Title,
+			task.Status,
+		)
 	}
 
 	fmt.Println("+----+----------------------+-------------+")
@@ -197,21 +200,33 @@ func ListTasks() error {
 	return nil
 }
 
-func main() {
+func showHelp() {
+	fmt.Println("Kanban CLI — программа для управления задачами.")
+	fmt.Println()
+	fmt.Println("Запуск:")
+	fmt.Println("  go run main.go")
+	fmt.Println()
+	fmt.Println("Подсказка:")
+	fmt.Println("  go run main.go --help")
+	fmt.Println()
+	fmt.Println("Доступные действия:")
+	fmt.Println("  1. Создать таску")
+	fmt.Println("  2. Пометить выполненным")
+	fmt.Println("  3. Удалить таску")
+	fmt.Println("  4. Все таски")
+	fmt.Println("  5. Завершить работу программы")
+	fmt.Println()
+	fmt.Println("Статусы:")
+	fmt.Println("  TODO - задача не выполнена")
+	fmt.Println("  DONE - задача выполнена")
+	fmt.Println()
+	fmt.Println("Формат tasks.txt:")
+	fmt.Println("  id;status;title")
+}
 
+func main() {
 	if len(os.Args) > 1 && os.Args[1] == "--help" {
-		fmt.Println("Task Manager")
-		fmt.Println()
-		fmt.Println("Использование:")
-		fmt.Println("  go run main.go              Запустить программу")
-		fmt.Println("  go run main.go --help       Показать подсказку")
-		fmt.Println()
-		fmt.Println("Команды внутри программы:")
-		fmt.Println("  1  Создать таску")
-		fmt.Println("  2  Пометить выполненным")
-		fmt.Println("  3  Удалить таску")
-		fmt.Println("  4  Показать все таски")
-		fmt.Println("  5  Завершить программу")
+		showHelp()
 		return
 	}
 
@@ -227,7 +242,12 @@ func main() {
 		fmt.Println("5. Завершить работу программы")
 		fmt.Print("Выберите действие (1-5): ")
 
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Ошибка ввода:", err)
+			continue
+		}
+
 		choice := strings.TrimSpace(input)
 
 		switch choice {
@@ -235,74 +255,86 @@ func main() {
 		case "1":
 			fmt.Print("Введите название таски: ")
 
-			titleInput, _ := reader.ReadString('\n')
+			titleInput, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Ошибка ввода:", err)
+				continue
+			}
+
 			title := strings.TrimSpace(titleInput)
 
 			if title == "" {
 				fmt.Println("Название не может быть пустым.")
 				continue
-			} else if len(title) > 20 {
+			}
+
+			if len(title) > 20 {
 				fmt.Println("Название не может быть длиннее 20 символов.")
 				continue
 			}
 
-			err := CreateTask(title)
-			if err != nil {
+			if err := CreateTask(title); err != nil {
 				fmt.Println("Ошибка при создании таски:", err)
 			}
 
 		case "2":
 			fmt.Print("Введите ID таски для пометки выполненной: ")
 
-			idInput, _ := reader.ReadString('\n')
+			idInput, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Ошибка ввода:", err)
+				continue
+			}
+
 			id := strings.TrimSpace(idInput)
 
 			if id == "" {
 				fmt.Println("ID не может быть пустым.")
 				continue
-			} else if _, err := strconv.Atoi(id); err != nil {
+			}
+
+			if _, err := strconv.Atoi(id); err != nil {
 				fmt.Println("ID должен быть числом.")
 				continue
 			}
 
-			err := MarkTaskAsDone(id)
-			if err != nil {
-				fmt.Println("Ошибка при пометке таски как выполненной:", err)
+			if err := MarkTaskAsDone(id); err != nil {
+				fmt.Println("Ошибка:", err)
 			}
 
 		case "3":
 			fmt.Print("Введите ID таски для удаления: ")
 
-			idInput, _ := reader.ReadString('\n')
+			idInput, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Ошибка ввода:", err)
+				continue
+			}
+
 			id := strings.TrimSpace(idInput)
 
 			if id == "" {
 				fmt.Println("ID не может быть пустым.")
 				continue
-			} else if _, err := strconv.Atoi(id); err != nil {
+			}
+
+			if _, err := strconv.Atoi(id); err != nil {
 				fmt.Println("ID должен быть числом.")
 				continue
 			}
 
-			err := DeleteTask(id)
-			if err != nil {
-				fmt.Println("Ошибка при удалении таски:", err)
+			if err := DeleteTask(id); err != nil {
+				fmt.Println("Ошибка:", err)
 			}
-
 		case "4":
-			err := ListTasks()
-			if err != nil {
+			if err := ListTasks(); err != nil {
 				fmt.Println("Ошибка при выводе тасок:", err)
 			}
-
 		case "5":
 			fmt.Println("Завершение работы программы.")
 			return
-
 		default:
 			fmt.Println("Неверный ввод. Введите число от 1 до 5.")
 		}
-
-		fmt.Println()
 	}
 }
