@@ -141,7 +141,6 @@ func DeleteTask(id string) error {
 	for i := range tasks {
 		if tasks[i].ID == id {
 			// Удаляем только найденную задачу.
-			// ID остальных задач при этом не изменяются.
 			tasks = append(tasks[:i], tasks[i+1:]...)
 			found = true
 			break
