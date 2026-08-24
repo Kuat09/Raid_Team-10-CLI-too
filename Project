@@ -15,6 +15,7 @@ type Task struct {
 	Status string
 	Title  string
 }
+
 // loadTasks загружает все задачи из файла tasks.txt.
 func loadTasks() ([]Task, error) {
 	file, err := os.Open(fileName)
@@ -46,6 +47,7 @@ func loadTasks() ([]Task, error) {
 	}
 	return tasks, nil
 }
+
 // saveTasks полностью сохраняет текущий список задач в файл.
 func saveTasks(tasks []Task) error {
 	file, err := os.Create(fileName)
@@ -69,6 +71,7 @@ func saveTasks(tasks []Task) error {
 	}
 	return writer.Flush()
 }
+
 // CreateTask создаёт новую задачу и сохраняет её в файл.
 func CreateTask(title string) error {
 	tasks, err := loadTasks()
@@ -103,6 +106,7 @@ func CreateTask(title string) error {
 	fmt.Println("Таска успешно создана.")
 	return nil
 }
+
 // MarkTaskAsDone меняет статус указанной задачи с TODO на DONE.
 func MarkTaskAsDone(id string) error {
 	tasks, err := loadTasks()
@@ -126,6 +130,7 @@ func MarkTaskAsDone(id string) error {
 	// Если цикл закончился, значит задачи с таким ID нет.
 	return fmt.Errorf("таска с ID %s не найдена", id)
 }
+
 // DeleteTask удаляет задачу с указанным ID.
 func DeleteTask(id string) error {
 	tasks, err := loadTasks()
@@ -151,6 +156,7 @@ func DeleteTask(id string) error {
 	fmt.Println("Таска успешно удалена.")
 	return nil
 }
+
 // ListTasks выводит все существующие задачи в виде таблицы.
 func ListTasks() error {
 	tasks, err := loadTasks()
@@ -227,7 +233,7 @@ func main() {
 			continue
 		}
 		choice := strings.TrimSpace(input)
-		switch choice 
+		switch choice {
 		case "1":
 			fmt.Print("Введите название таски: ")
 			titleInput, err := reader.ReadString('\n')
