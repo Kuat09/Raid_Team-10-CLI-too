@@ -27,20 +27,28 @@ func loadTasks() ([]Task, error) {
 	defer file.Close()
 
 	var tasks []Task
-	if len(tasks) > 99 {
-		fmt.Println("Превышено максимальное количество тасок (99).")
-	}
+
 	scanner := bufio.NewScanner(file)
+
 	for scanner.Scan() {
 		line := scanner.Text()
+
 		parts := strings.Split(line, ";")
+
 		if len(parts) != 3 {
 			continue
 		}
+
 		id := parts[0]
 		title := parts[1]
 		status := parts[2]
-		task := Task{ID: id, Title: title, Status: status}
+
+		task := Task{
+			ID:     id,
+			Title:  title,
+			Status: status,
+		}
+
 		tasks = append(tasks, task)
 	}
 
@@ -77,17 +85,35 @@ func CreateTask(title string) error {
 		return err
 	}
 
+	// Максимум 99 задач.
+	if len(tasks) >= 99 {
+		return fmt.Errorf("превышено максимальное количество тасок (99)")
+	}
+
 	id := strconv.Itoa(len(tasks) + 1)
-	task := Task{ID: id, Title: title, Status: "TODO"}
+
+	task := Task{
+		ID:     id,
+		Title:  title,
+		Status: "TODO",
+	}
+
 	tasks = append(tasks, task)
 
-	file, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(
+		file,
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+		0644,
+	)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(fmt.Sprintf("%s;%s;%s\n", task.ID, task.Title, task.Status))
+	_, err = file.WriteString(
+		fmt.Sprintf("%s;%s;%s\n", task.ID, task.Title, task.Status),
+	)
+
 	if err != nil {
 		return err
 	}
@@ -103,11 +129,12 @@ func MarkTaskAsDone(id string) error {
 	}
 
 	for i, task := range tasks {
-		if task.Status == "DONE" {
-			fmt.Println("Таска уже выполнена.")
-			return nil
-		}
 		if task.ID == id {
+			if task.Status == "DONE" {
+				fmt.Println("Таска уже выполнена.")
+				return nil
+			}
+
 			tasks[i].Status = "DONE"
 			break
 		}
@@ -158,17 +185,38 @@ func ListTasks() error {
 	fmt.Println("+----+----------------------+-------------+")
 	fmt.Println("| ID | Title                | Status      |")
 	fmt.Println("+----+----------------------+-------------+")
+
 	for _, task := range tasks {
 		fmt.Printf("| %-2s |", task.ID)
 		fmt.Printf(" %-20s |", task.Title)
 		fmt.Printf(" %-11s |\n", task.Status)
 	}
+
 	fmt.Println("+----+----------------------+-------------+")
+
 	return nil
 }
 
 func main() {
+
+	if len(os.Args) > 1 && os.Args[1] == "--help" {
+		fmt.Println("Task Manager")
+		fmt.Println()
+		fmt.Println("Использование:")
+		fmt.Println("  go run main.go              Запустить программу")
+		fmt.Println("  go run main.go --help       Показать подсказку")
+		fmt.Println()
+		fmt.Println("Команды внутри программы:")
+		fmt.Println("  1  Создать таску")
+		fmt.Println("  2  Пометить выполненным")
+		fmt.Println("  3  Удалить таску")
+		fmt.Println("  4  Показать все таски")
+		fmt.Println("  5  Завершить программу")
+		return
+	}
+
 	reader := bufio.NewReader(os.Stdin)
+
 	for {
 		fmt.Println()
 		fmt.Println("=== МЕНЮ ЗАДАЧ ===")
@@ -178,13 +226,18 @@ func main() {
 		fmt.Println("4. Все таски")
 		fmt.Println("5. Завершить работу программы")
 		fmt.Print("Выберите действие (1-5): ")
+
 		input, _ := reader.ReadString('\n')
 		choice := strings.TrimSpace(input)
+
 		switch choice {
+
 		case "1":
 			fmt.Print("Введите название таски: ")
+
 			titleInput, _ := reader.ReadString('\n')
 			title := strings.TrimSpace(titleInput)
+
 			if title == "" {
 				fmt.Println("Название не может быть пустым.")
 				continue
@@ -192,14 +245,18 @@ func main() {
 				fmt.Println("Название не может быть длиннее 20 символов.")
 				continue
 			}
+
 			err := CreateTask(title)
 			if err != nil {
 				fmt.Println("Ошибка при создании таски:", err)
 			}
+
 		case "2":
 			fmt.Print("Введите ID таски для пометки выполненной: ")
+
 			idInput, _ := reader.ReadString('\n')
 			id := strings.TrimSpace(idInput)
+
 			if id == "" {
 				fmt.Println("ID не может быть пустым.")
 				continue
@@ -207,14 +264,18 @@ func main() {
 				fmt.Println("ID должен быть числом.")
 				continue
 			}
+
 			err := MarkTaskAsDone(id)
 			if err != nil {
 				fmt.Println("Ошибка при пометке таски как выполненной:", err)
 			}
+
 		case "3":
 			fmt.Print("Введите ID таски для удаления: ")
+
 			idInput, _ := reader.ReadString('\n')
 			id := strings.TrimSpace(idInput)
+
 			if id == "" {
 				fmt.Println("ID не может быть пустым.")
 				continue
@@ -222,21 +283,26 @@ func main() {
 				fmt.Println("ID должен быть числом.")
 				continue
 			}
+
 			err := DeleteTask(id)
 			if err != nil {
 				fmt.Println("Ошибка при удалении таски:", err)
 			}
+
 		case "4":
 			err := ListTasks()
 			if err != nil {
 				fmt.Println("Ошибка при выводе тасок:", err)
 			}
+
 		case "5":
 			fmt.Println("Завершение работы программы.")
 			return
+
 		default:
 			fmt.Println("Неверный ввод. Введите число от 1 до 5.")
 		}
+
 		fmt.Println()
 	}
 }
