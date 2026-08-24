@@ -14,7 +14,7 @@ Kanban CLI project
 
 1) Clone the repository:
 ```bash
-git clone https://github.com/Kuat09/Raid_Team-10-CLI-too.git
+https://github.com/Kuat09/Raid_Team-10-CLI-too.git
 ```
 *(use HTTPS link)*
 2) Перейдите в папку проекта:
